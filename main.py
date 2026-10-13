@@ -1,7 +1,7 @@
 """Desktop interface for the Scenario 3 milk tea POS."""
 
-import tkinter as tk
 import sys
+import tkinter as tk
 from tkinter import messagebox, ttk
 
 from pos_logic import POS, POSError, PRODUCTS, money
@@ -110,6 +110,7 @@ class POSApp:
             return
         self._refresh()
         self.cart.selection_set(product_id)
+        self.cart.focus(product_id)
         self.cart.see(product_id)
         self.status.set("Item added. Review the order, then validate the cash payment.")
 
@@ -188,6 +189,7 @@ class POSApp:
 
     def _refresh(self):
         selected = self.cart.selection()
+        focused = self.cart.focus()
         rows = self.cart.get_children()
         if rows:
             self.cart.delete(*rows)
@@ -197,6 +199,9 @@ class POSApp:
             ))
         if selected and self.cart.exists(selected[0]):
             self.cart.selection_set(selected[0])
+        # Rebuilding rows clears Treeview's keyboard focus as well as selection.
+        if focused and self.cart.exists(focused):
+            self.cart.focus(focused)
         self.total.set(f"Total: {money(self.pos.total)}")
         state = "disabled" if self.pos.confirmed else "normal"
         for button in self.product_buttons + self.cart_buttons:
