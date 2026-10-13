@@ -91,3 +91,85 @@ Conversion commits build on that history. See `git log --oneline` for actual has
 The repository is
 `https://github.com/christan-dave-castillo/Abdullah-Castillo-Practical-Exam-Scenario-3.git`.
 Synchronization status is reported after the final commit and remote verification.
+
+## Automated checks
+
+From the repository root, run:
+
+```sh
+php tests/run.php
+php -l src/pos.php
+php -l public/index.php
+```
+
+With the server still running in a separate terminal, run:
+
+```sh
+php tests/http.php
+```
+
+The HTTP suite creates its own test sessions and fake sales; it does not use your
+browser's session. PHP's built-in HTTP streams must be enabled (`allow_url_fopen`).
+An optional alternate server port can be supplied as a localhost URL:
+`php tests/http.php http://localhost:8001`.
+
+Verified on 2026-10-13 with PHP 8.3.13: **36 logic tests** and **100 HTTP checks**
+passed. These cover catalog/cart calculations, cash errors, payment invalidation,
+confirmation and receipts, duplicate/stale requests, reset, separate sessions,
+CSRF, escaped cash output, response headers, and public-directory isolation.
+Both application PHP files and the HTTP test passed syntax checks.
+
+Browser inspection was blocked because browser access to localhost was declined.
+Automated HTTP checks verify returned HTML and server behavior, but do not verify
+rendering, physical keyboard/mouse use, browser history behavior, or print layout.
+
+## Testing checklist — Section V
+
+Use these categories for manual screenshots. The feature names follow the twelve
+features recorded in the original project README.
+
+| # | Required feature | Manual check / screenshot |
+| --- | --- | --- |
+| 1 | Product names and prices | Show all six buttons: Classic ₱59, Wintermelon ₱65, Taro ₱65, Lychee ₱55, Brown Sugar ₱69, Water ₱20; verify full names |
+| 2 | Add through buttons | Add Classic twice, Lychee once, Water once; Classic has quantity 2 |
+| 3 | Increase/decrease quantities | Use + and −; decreasing from quantity 1 removes the row |
+| 4 | Remove an item | Remove Water, then add it again |
+| 5 | Automatic subtotals/total | Sample order subtotals are ₱118.00, ₱55.00, ₱20.00; total is ₱193.00 |
+| 6 | Clear order summary | Read names, quantities, unit prices, subtotals, and total in the cart table |
+| 7 | Cash input | Enter `200.00`; select Validate & Compute (also try Enter in the field) |
+| 8 | Invalid cash alerts | Try blank, `abc`, `-1`, and `192.99`; verify clear error messages and no confirmation |
+| 9 | Correct change | Cash `200.00` gives ₱7.00; `193.00` gives ₱0.00; `200.50` gives ₱7.50 |
+| 10 | Successful confirmation | Cancel first and check no receipt; validate again, then Confirm Payment; verify success message |
+| 11 | Digital receipt | Check transaction number, item names, quantities, unit prices, subtotals, total, cash, and change |
+| 12 | New Transaction | Clear completed sale; cart is empty, cash is blank, receipt is gone; second sale has a different number |
+
+Additional manual checks:
+
+- Validate cash, then change the cart; review closes and validation is required
+  again. Restore the cart and validate; select Edit Cash, change cash, and check
+  that validation is required again. Cancelling also revokes validation.
+- Keep an older tab open, update the cart in another tab, and submit the older
+  form. Check the outdated-form alert. Use Back after confirmation and resubmit;
+  check that only the existing receipt remains. Refresh must not add items again.
+- Check the page at 1366×768 and a narrow mobile width, keyboard Tab/Enter use,
+  and horizontal scrolling of tables on small screens. Print the receipt and
+  check that cart controls are omitted. These visual checks remain manual.
+
+## GitHub synchronization evidence
+
+After committing/pushing, capture:
+
+```sh
+git log -8 --oneline
+git status --short --branch
+git remote -v
+git rev-parse HEAD
+git ls-remote origin refs/heads/main
+```
+
+Local HEAD and the remote `main` SHA must match. The first conversion commit is
+`6a19724` — **Convert Tkinter POS to session-based PHP web application**. A
+subsequent commit adds automated HTTP/security verification and the exam testing
+checklist. Use the live Git log for that commit's actual hash; no hashes or push
+results are fabricated in this guide. Capture the GitHub `main` branch, its
+Commits page, test results, and the app screenshot categories above.

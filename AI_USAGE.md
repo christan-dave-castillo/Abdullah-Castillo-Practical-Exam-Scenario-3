@@ -1,5 +1,8 @@
 # AI-assisted development record — IT415 Section VIII
 
+The first two records below are historical Python/Tkinter development evidence.
+The active application is now PHP; see **Use 3** and the current README.
+
 Tool: Codex in the GitHub-connected cloud environment.
 
 The two development request texts below are copied from this conversation.
@@ -140,3 +143,50 @@ made none. Identify any adjustments made after this second response.]**
 
 Be prepared to explain `POS.add`, `total`, `validate_payment`, and
 `confirm_payment`, and why changing the cart/cash requires revalidation.
+
+## Use 3 — PHP web conversion (2026-10-13)
+
+Tool: Codex desktop in the existing local project folder. PHP 8.3.13 was available.
+
+### Prompt screenshot categories
+
+Capture the actual five-part conversion request and response in the chat manually.
+These categories summarize the request; they are not a verbatim prompt transcript.
+
+- **Context:** existing Milk Tea POS; IT415 practical exam, Scenario 3.
+- **Objective:** convert the desktop application to a simple PHP web POS.
+- **Requirements:** six exact products; cart CRUD; total/cash/change; confirmation,
+  receipt/reset; alerts, validation, sessions, CSRF, escaped output, duplicate guards.
+- **Constraints:** PHP/HTML/CSS only; no JavaScript, database, framework, or external
+  dependencies; integer centavos; preserve Git history and make genuine commits.
+- **Expected Output:** working app, local setup, test checklist, actual commit
+  history, synchronization status, and remaining manual browser checks.
+
+### Actual response and test evidence
+
+Recovered the folder's missing Git metadata from the original GitHub repository,
+starting at `975ed8d`; the downloaded files matched the recovered HEAD. Preserved
+the original Python files in `legacy/`. Added the PHP catalog/cart/payment logic,
+session forms, responsive CSS, confirmation review, digital receipt, and reset.
+The first conversion commit is `6a19724`; subsequent verification history is
+available in the actual Git log.
+
+Added **36 passing PHP logic tests** and **100 passing HTTP checks**. These include
+the ₱193 sample sale, ₱200 cash and ₱7 change; invalid cash; failed/revoked payment
+validation; stale and duplicate requests; receipts/reset; separate sessions; CSRF;
+escaped input; and web-root isolation. Browser inspection was declined, so visual
+rendering, keyboard/mouse behavior, and print layout remain manual checks. Final
+GitHub synchronization evidence must come from actual push and matching SHA output.
+
+### Student evaluation and screenshots
+
+Student's evaluation: **[Complete after running the PHP tests and manual browser
+checklist. Explain what you verified and any limitations.]**
+
+Personal changes: **[Record only changes you actually made.]**
+
+Screenshot categories: **products/cart**, **invalid cash alerts**, **validated
+payment and confirmation**, **successful receipt**, **New Transaction**, **PHP test
+results**, and **Git history/GitHub synchronization**. See the current README for
+the twelve-feature checklist. Be ready to explain integer centavos, PHP sessions,
+CSRF, order revisions, and why Edit Cash revokes payment validation.
