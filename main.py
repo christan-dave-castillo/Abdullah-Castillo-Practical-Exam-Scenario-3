@@ -1,9 +1,10 @@
 """Desktop interface for the Scenario 3 milk tea POS."""
 
 import tkinter as tk
-from tkinter import ttk
+import sys
+from tkinter import messagebox, ttk
 
-from pos_logic import PRODUCTS
+from pos_logic import POS, POSError, PRODUCTS, money
 
 
 class POSApp:
@@ -12,12 +13,16 @@ class POSApp:
         root.title("Milk Tea and Beverage Shop POS")
         root.geometry("1000x680")
         root.minsize(900, 600)
+        self.pos = POS()
         self.cash = tk.StringVar()
         self.total = tk.StringVar(value="Total: ₱0.00")
         self.change = tk.StringVar(value="Change: —")
         self.status = tk.StringVar(value="Browse products to begin a transaction.")
         self.product_buttons = []
         self._build_interface()
+        self.cash.trace_add("write", self._cash_changed)
+        self.cash_entry.bind("<Return>", lambda event: self.validate_payment())
+        self._refresh()
 
     def _build_interface(self):
         page = ttk.Frame(self.root, padding=12)
@@ -51,7 +56,10 @@ class POSApp:
             ("price", "Unit price", 85), ("subtotal", "Subtotal", 85),
         ):
             self.cart.heading(key, text=title)
-            self.cart.column(key, width=width, minwidth=width, anchor="w" if key == "name" else "e")
+            self.cart.column(
+                key, width=width, minwidth=width,
+                stretch=key == "name", anchor="w" if key == "name" else "e",
+            )
         self.cart.grid(row=0, column=0, sticky="nsew")
         scroll = ttk.Scrollbar(order, orient="vertical", command=self.cart.yview)
         scroll.grid(row=0, column=1, sticky="ns")
@@ -94,25 +102,130 @@ class POSApp:
             row=3, column=0, columnspan=2, sticky="w", pady=(12, 0)
         )
 
-    # Transaction behavior is added in the next implementation commit.
     def add_product(self, product_id):
-        self.status.set("Product controls are ready for transaction logic.")
+        try:
+            self.pos.add(product_id)
+        except POSError as error:
+            self._show_error(error)
+            return
+        self._refresh()
+        self.cart.selection_set(product_id)
+        self.cart.see(product_id)
+        self.status.set("Item added. Review the order, then validate the cash payment.")
 
     def edit_cart(self, action):
-        self.status.set("Select a cart item to adjust its quantity or remove it.")
+        selected = self.cart.selection()
+        if not selected:
+            self._show_error(POSError("Select a cart item first."))
+            return
+        try:
+            if action == "increase":
+                self.pos.increase(selected[0])
+            elif action == "decrease":
+                self.pos.decrease(selected[0])
+            elif action == "remove":
+                self.pos.remove(selected[0])
+        except POSError as error:
+            self._show_error(error)
+            return
+        self._refresh()
+        self.status.set("Cart updated. Validate the payment again before confirming.")
+
+    def _cash_changed(self, *_):
+        try:
+            self.pos.set_cash(self.cash.get())
+        except POSError as error:
+            self._show_error(error)
+            return
+        self._refresh_payment()
+        self.status.set("Cash changed. Use Validate & Compute before confirming.")
 
     def validate_payment(self):
-        self.status.set("Payment controls are ready for validation logic.")
+        try:
+            change = self.pos.validate_payment()
+        except POSError as error:
+            self._refresh_payment()
+            self._show_error(error)
+            return
+        self._refresh_payment()
+        self.status.set(f"Payment validated. Change: {money(change)}. Ready to confirm.")
 
     def confirm_payment(self):
-        pass
+        if self.pos.confirmed or self.pos.validated_cash is None:
+            self._show_error(POSError("Validate an unpaid transaction before confirming."))
+            return
+        details = "\n".join(
+            f"{item.quantity} × {item.product.name}: {money(item.subtotal)}"
+            for item in self.pos.items
+        )
+        details += (
+            f"\n\nTotal: {money(self.pos.total)}"
+            f"\nCash paid: {money(self.pos.validated_cash)}"
+            f"\nChange: {money(self.pos.change)}\n\nConfirm this payment?"
+        )
+        if not messagebox.askyesno("Confirm payment", details, parent=self.root):
+            self.status.set("Payment not confirmed. You can review or change the order.")
+            return
+        try:
+            self.pos.confirm_payment()
+        except POSError as error:
+            self._show_error(error)
+            return
+        self._refresh()
+        self.status.set(f"Payment successful — {self.pos.reference}. Start a New Transaction for the next order.")
+        messagebox.showinfo(
+            "Payment successful",
+            f"Transaction {self.pos.reference}\nChange: {money(self.pos.change)}\nYour receipt is displayed.",
+            parent=self.root,
+        )
 
     def new_transaction(self):
+        self.pos.new_transaction()
         self.cash.set("")
+        self._refresh()
         self.status.set("Browse products to begin a transaction.")
+        self.product_buttons[0].focus_set()
+
+    def _refresh(self):
+        selected = self.cart.selection()
+        rows = self.cart.get_children()
+        if rows:
+            self.cart.delete(*rows)
+        for item in self.pos.items:
+            self.cart.insert("", "end", iid=item.product.id, values=(
+                item.product.name, item.quantity, money(item.product.price), money(item.subtotal),
+            ))
+        if selected and self.cart.exists(selected[0]):
+            self.cart.selection_set(selected[0])
+        self.total.set(f"Total: {money(self.pos.total)}")
+        state = "disabled" if self.pos.confirmed else "normal"
+        for button in self.product_buttons + self.cart_buttons:
+            button.configure(state=state)
+        self.receipt.configure(state="normal")
+        self.receipt.delete("1.0", "end")
+        self.receipt.insert("1.0", self.pos.receipt)
+        self.receipt.configure(state="disabled")
+        self._refresh_payment()
+
+    def _refresh_payment(self):
+        change = self.pos.change
+        self.change.set(f"Change: {money(change)}" if change is not None else "Change: —")
+        self.cash_entry.configure(state="disabled" if self.pos.confirmed else "normal")
+        self.validate_button.configure(state="disabled" if self.pos.confirmed else "normal")
+        can_confirm = self.pos.validated_cash is not None and not self.pos.confirmed
+        self.confirm_button.configure(state="normal" if can_confirm else "disabled")
+
+    def _show_error(self, error):
+        self.status.set(str(error))
+        messagebox.showerror("Please check the transaction", str(error), parent=self.root)
 
 
 if __name__ == "__main__":
-    window = tk.Tk()
+    try:
+        window = tk.Tk()
+    except tk.TclError as error:
+        print(f"Cannot open the Tkinter window: {error}", file=sys.stderr)
+        print("Run on a desktop with Tkinter and an active display. Headless tests: python -m unittest discover -s tests -v", file=sys.stderr)
+        sys.exit(1)
     POSApp(window)
     window.mainloop()
