@@ -9,21 +9,29 @@ application dependencies. Money is calculated in integer centavos.
 Install PHP 8.0 or newer. From the repository directory:
 
 ```sh
-cd public
-php -S localhost:8000
+php -S localhost:8000 -t public
 ```
 
 Open **http://localhost:8000** in a browser. Stop the server with Ctrl+C.
 If PHP is not on PATH, use your PHP executable, for example on this workstation:
 
 ```powershell
-cd public
-D:\xampp\php\php.exe -S localhost:8000
+D:\xampp\php\php.exe -S localhost:8000 -t public
 ```
 
-Run the server inside `public` so source code, tests, and documentation are outside
-the web root. PHP needs a writable session storage directory. The built-in server
-is intended for local development and the exam demonstration.
+The `-t public` option sets the correct web root while you remain in the repository
+directory. Source code, tests, and documentation stay outside the web root.
+Alternatively, run `cd public` first and then `php -S localhost:8000`.
+PHP needs a writable session storage directory. The built-in server is intended
+for local development and the exam demonstration.
+
+### If `/` shows Not Found
+
+Stop the existing PHP server with Ctrl+C. From the repository root, run
+`php -S localhost:8000 -t public`, then reload **http://localhost:8000/**.
+Running `php -S localhost:8000` from the repository root serves the wrong folder:
+the application entry point is `public/index.php`. Keep the URL at `/` with the
+correct web root so stylesheet links and POST redirects also work.
 
 ## Transaction flow — Section IV
 
